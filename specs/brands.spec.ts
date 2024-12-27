@@ -1,24 +1,19 @@
-import * as supertest from "supertest";
+// import * as supertest from "supertest";
+import brandController from "../controller/brand.controller";
 // import * as brands_data from '../test_data/brands_tests.json';
 const brands_data = require("../test_data/brands_tests.json");
 
 //define and set base url
-const BASE_URL = 'https://practice-react.sdetunicorns.com/api/test';
-const request = supertest(BASE_URL);
+// const BASE_URL = 'https://practice-react.sdetunicorns.com/api/test';
+// const request = supertest(BASE_URL);
 
 //create beforeAll() hook for: 
     //POST /brands - create brand
     //GET /brands/:id - pass the response data to other tests
 
-
-
 describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
 
     const noBrandID = '64b8871f49e85607248e2b46';
-    const longBrandNamePut = {name: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ12345'};
-    const nonStringBrandDescription = {name: "Description is not a string", description: 12345};
-    let postBrandBody;
-
     describe('Create, Fetch, Update, and Delete Brands', ()=>{
 
 
@@ -44,13 +39,11 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
             }
 
             beforeAll(async ()=>{
-                postBrand = await request
-                    .post('/brands')
-                    .send(data);
+                postBrand = await brandController.postBrands(data);//request.post('/brands').send(data);
             })
 
             afterAll(async ()=>{
-                await request.delete(`/brands/${postBrand.body._id}`);
+                await brandController.deleteBrands(postBrand.body._id);//request.delete(`/brands/${postBrand.body._id}`);
             })
             it('POST /brands to insert a new brand', async ()=>{
                 //will do asserts on the beforeAll!
@@ -64,7 +57,7 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
             })
 
             it('POST /brands request - name property is mandatory', async ()=>{
-                const response = await request.post('/brands').send(postData_nameMissing);
+                const response = await brandController.postBrands(postData_nameMissing); //request.post('/brands').send(postData_nameMissing);
                 //expect 422
                 expect(response.status).toEqual(422);
                 expect(response.body).toHaveProperty('error');
@@ -72,7 +65,7 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
             })
     
             it('POST /brands request - name property cannot be empty', async ()=>{
-                const response = await request.post('/brands').send(postData_nameEmpty);
+                const response = await brandController.postBrands(postData_nameEmpty); //request.post('/brands').send(postData_nameEmpty);
                 //expect 422
                 expect(response.status).toEqual(422);
                 expect(response.body).toHaveProperty('error');
@@ -80,7 +73,7 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
             })
     
             it('POST /brands request - name min char should be >1', async ()=>{
-                const response = await request.post('/brands').send(postData_nameMinCharCheck);
+                const response = await brandController.postBrands(postData_nameMinCharCheck); //request.post('/brands').send(postData_nameMinCharCheck);
                 //expect 422
                 expect(response.status).toEqual(422);
                 expect(response.body).toHaveProperty('error');
@@ -89,7 +82,7 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
 
             it('POST /brands - duplicate entries not allowed', async ()=>{
                 //second request
-                const response = await request.post('/brands').send(data);
+                const response = await brandController.postBrands(data) //request.post('/brands').send(data);
                 expect(response.status).toEqual(422);
                 expect(response.body).toHaveProperty('error');
                 expect(response.body.error).toEqual(`${postBrand.body.name} already exists`);
@@ -97,26 +90,34 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
         })
 
         describe('GET /brand/:id', ()=>{
+            const data = {
+                name: "For Testing "+Math.floor(Math.random()*100000),
+                description: "New Brand For Testing"
+            }
+        
             let postBrand;
 
             beforeAll(async ()=>{
-                const data = {
-                    name: "For Testing "+Math.floor(Math.random()*100000),
-                    description: "New Brand For Testing"
-                }
-            
-                postBrand = await request
-                    .post('/brands')
-                    .send(data);
+
+                postBrand = await brandController.postBrands(data); //request.post('/brands').send(data);
 
             })
 
             afterAll(async ()=>{
-                await request.delete(`/brands/${postBrand.body._id}`);
+                await brandController.deleteBrands(postBrand.body._id);//request.delete(`/brands/${postBrand.body._id}`);
             })  
 
+            it('GET /brands and verify response, list item count, and id/name properties', async ()=>{
+                const response = await brandController.getBrands();//request.get('/brands');
+                expect(response.status).toBe(200);
+                //list items > 1
+                const responseBodyCount = response.body.length;
+                expect(responseBodyCount).toBeGreaterThan(1);
+                expect(Object.keys(response.body[0])).toEqual(['_id', 'name']);
+        })
+
             it('GET /brands by {id}', async ()=>{
-                const response = await request.get(`/brands/${postBrand.body._id}`);
+                const response = await  brandController.getBrandById(postBrand.body._id); //request.get(`/brands/${postBrand.body._id}`);
                 //assert 200
                 expect(response.status).toEqual(200);
                 //assert name is as expected
@@ -125,12 +126,12 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
 
             it('GET /brands/:id - throw error if brand does not exist', async ()=>{
                 //brand not found error
-                const firstResponse = await request.get(`/brands/${noBrandID}`);
+                const firstResponse = await brandController.getBrandById(noBrandID);//request.get(`/brands/${noBrandID}`);
                 expect(firstResponse.status).toEqual(404);
                 expect(firstResponse.body).toHaveProperty('error');
                 expect(firstResponse.body.error).toEqual('Brand not found.');
                 //unable to fetch brand error
-                const secondResponse = await request.get(`/brands/${noBrandID}a`);
+                const secondResponse = await brandController.getBrandById(noBrandID+"a")//request.get(`/brands/${noBrandID}a`);
                 expect(secondResponse.status).toEqual(422);
                 expect(secondResponse.body).toHaveProperty('error');
                 expect(secondResponse.body.error).toEqual('Unable to fetch brand');
@@ -140,6 +141,9 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
 
         describe('PUT /brands/:id', ()=>{
             let postBrand;
+            let postBrandBody;
+            const longBrandNamePut = {name: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ12345'};
+            const nonStringBrandDescription = {name: "Description is not a string", description: 12345};
 
             const data = {
                 name: "For Testing "+Math.floor(Math.random()*100000),
@@ -163,18 +167,14 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
             };
 
             beforeAll(async ()=>{
+                postBrand = await brandController.postBrands(data); //request.post('/brands').send(data);
+            })
 
-                postBrand = await request
-                    .post('/brands')
-                    .send(data);
-            })
             afterAll(async ()=>{
-                await request.delete(`/brands/${postBrand.body._id}`);
-            })
+                await brandController.deleteBrands(postBrand.body._id);//request.delete(`/brands/${postBrand.body._id}`);
+            })  
             it('PUT /brands/{id}', async ()=>{
-                const putRes = await request
-                    .put(`/brands/${postBrand.body._id}`)
-                    .send(putData);
+                const putRes = await brandController.putBrands(postBrand.body._id, putData); //request.put(`/brands/${postBrand.body._id}`).send(putData);
                 expect(putRes.status).toEqual(200);
                 expect(putRes.body.name).not.toEqual(data.name);
                 expect(putRes.body.name).toEqual(putData.name);
@@ -184,12 +184,12 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
 
             it('PUT /brands - brand name > 30 chars is not accepted', async ()=>{
                 //post request to add brand and grab ID
-                const postResponse = await request.post('/brands').send(postData2);
+                const postResponse = await brandController.postBrands(postData2);//request.post('/brands').send(postData2);
                 console.log(postResponse.body);
                 expect(postResponse.status).toEqual(200);
                 postBrandBody = postResponse.body;
                 //put request to update brand name > 30 char
-                const putResponse = await request.put(`/brands/${postBrandBody._id}`).send(longBrandNamePut);
+                const putResponse = await brandController.putBrands(postBrand.body._id, longBrandNamePut); //request.put(`/brands/${postBrandBody._id}`).send(longBrandNamePut);
                 expect(putResponse.status).toEqual(422);
                 expect(putResponse.body).toHaveProperty('error');
                 expect(putResponse.body.error).toEqual('Brand name is too long');
@@ -197,24 +197,24 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
     
             it('PUT /brands - brand name must be a string', async ()=>{
                 //post request to add brand and grab ID
-                const postResponse = await request.post('/brands').send(postData3);
+                const postResponse = await brandController.postBrands(postData3) //request.post('/brands').send(postData3);
                 console.log(postResponse.body);
                 expect(postResponse.status).toEqual(200);
                 postBrandBody = postResponse.body;
                 
-                const response = await request.put(`/brands/${postBrandBody._id}`).send(nonStringBrandDescription);
+                const response = await brandController.putBrands(postBrandBody._id, nonStringBrandDescription);//request.put(`/brands/${postBrandBody._id}`).send(nonStringBrandDescription);
                 expect(response.status).toEqual(422);
                 expect(response.body).toHaveProperty('error');
                 expect(response.body.error).toEqual('Brand description must be a string');
             })
     
             it('PUT /brands/:id - throw error when updating invalid brand', async ()=>{
-                const responseFirst = await request.put(`/brands/${noBrandID}`).send(data);
+                const responseFirst = await brandController.putBrands(noBrandID, data); //request.put(`/brands/${noBrandID}`).send(data);
                 expect(responseFirst.status).toEqual(404);
                 expect(responseFirst.body).toHaveProperty('error');
                 expect(responseFirst.body.error).toEqual('Brand not found.');
     
-                const responseSecond = await request.put(`/brands/${noBrandID}a`).send(data);
+                const responseSecond = await brandController.putBrands(noBrandID+"a", data);//request.put(`/brands/${noBrandID}a`).send(data);
                 expect(responseSecond.status).toEqual(422);
                 expect(responseSecond.body).toHaveProperty('error');
                 expect(responseSecond.body.error).toEqual('Unable to update brands');
@@ -225,16 +225,12 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
         describe('DELETE /brands/:id', ()=>{
             let postBrand;
             let deleteBrand;
+            const data = {
+                name: "For Testing "+Math.floor(Math.random()*100000),
+                description: "New Brand For Testing"
+            }
             beforeAll(async ()=>{
-                const data = {
-                    name: "For Testing "+Math.floor(Math.random()*100000),
-                    description: "New Brand For Testing"
-                }
-            
-                postBrand = await request
-                    .post('/brands')
-                    .send(data);
-
+                postBrand = await brandController.postBrands(data); //request.post('/brands').send(data);
             })
             // afterAll(async ()=>{
             //     deleteBrand = await request.delete(`/brands/${postBrand.body._id}`);
@@ -242,17 +238,17 @@ describe('BRANDS TESTS - Optimizing flow + overview', ()=>{
             // })
             it('DELETE /brands/{id}', async ()=>{
                 //delete
-                deleteBrand = await request.delete(`/brands/${postBrand.body._id}`);
+                deleteBrand = await brandController.deleteBrands(postBrand.body._id);//request.delete(`/brands/${postBrand.body._id}`);
                 expect(deleteBrand.body).toBeNull();
             })
 
             it('DELETE /brands/:id - throw error when deleting invalid brand', async ()=>{
-                const responseFirst = await request.delete(`/brands/${noBrandID}`);
+                const responseFirst = await brandController.deleteBrands(noBrandID);//request.delete(`/brands/${noBrandID}`);
                 expect(responseFirst.status).toEqual(404);
                 expect(responseFirst.body).toHaveProperty('error');
                 expect(responseFirst.body.error).toEqual('Brand not found.');
     
-                const responseSecond = await request.delete(`/brands/${noBrandID}a`);
+                const responseSecond = await brandController.deleteBrands(noBrandID+"a"); // request.delete(`/brands/${noBrandID}a`);
                 expect(responseSecond.status).toEqual(422);
                 expect(responseSecond.body).toHaveProperty('error');
                 expect(responseSecond.body.error).toEqual('Unable to delete brand');
