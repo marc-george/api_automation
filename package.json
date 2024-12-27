@@ -11,6 +11,8 @@
   "description": "",
   "devDependencies": {
     "jest": "^29.5.0",
+    "jest-html-reporters": "^3.1.7",
+    "jest-junit": "^16.0.0",
     "supertest": "^6.3.3",
     "ts-jest": "^29.2.5"
   },

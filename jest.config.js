@@ -4,7 +4,20 @@ module.exports = {
   transform: {
     "^.+.tsx?$": ["ts-jest",{}],
   },
-  // moduleNameMapper: {
-  //   "(.+)\\.js": "$1",
-  // },
+  reporters: [
+    'default',
+    ['jest-junit',
+      {
+        outputDirectory: './reports'
+      }
+    ],
+    ['jest-html-reporters',
+      {
+        pageTitle: "Test Report",
+        publicPath: './reports',
+        filename: 'test_report.html',
+        openReport: true,
+      } 
+    ],
+  ]
 };
